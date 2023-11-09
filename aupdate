@@ -1,0 +1,90 @@
+#!/bin/bash
+tmpfile=/tmp/updated-packages.txt
+
+SUMMARY=true
+ASK=false
+GUI=false
+OPTIONS=$(getopt -q -o asgh --long ask,summary,gui,help -- "$@")
+for opt in $OPTIONS; do
+  case $opt in
+    -s) ;&
+    --summary)
+      SUMMARY=true
+      ;;
+    -a) ;&
+    --ask)
+      ASK=true
+      ;;
+    -g) ;&
+    --gui)
+      GUI=true
+      ;;
+    -h) ;&
+    --help) ;&
+    \?)
+      echo -e "USAGE: aupdate [-asgh]\n  -a, --ask      Ask for confirmation before continuing\n  -s, --summary  Summarize packages after installing\n  -g, --gui      Provide information as gui pop-ups\n  -h, --help     Provide this help information"
+      exit 0
+      ;;
+  esac
+done
+
+echo -e "\e[1;34mUPDATE REPOSITORIES\e[0m"
+sudo apt update
+
+UPGRADES=$(apt-get -s upgrade | sed -n '/following packages/,/newly installed/p')
+if [ ! -n "$UPGRADES" ]; then
+  exit 0
+fi
+
+if "$ASK"; then
+  echo $UPGRADES  
+  read -p $'\e[1;34mDo you want to continue?\e[0m ' -n 1 -r
+  echo
+  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    exit 0
+  fi
+fi
+
+echo -e "\e[1;34mUPGRADE PACKAGES\e[0m"
+sudo apt -y upgrade
+echo -e "\e[1;34mREMOVE UNNESSACARY PACKAGES\e[0m"
+sudo apt -y autoremove
+echo -e "\e[1;34mAUTOCLEAN\e[0m"
+sudo apt -y autoclean
+
+if "$GUI"; then
+  if [ -f /var/run/reboot-required ]
+	  then
+		  notify-send 'Restart Required' 'Please restart to finish updating!' --icon=system-software-update
+  fi
+
+  if $SUMMARY; then
+    if [ ! -n "$UPGRADES" ]; then #will never get here
+      notify-send 'No Updates' 'No packages were updated!' --icon=system-software-update
+    else
+      if [! -e "$tmpfile" ]; then
+  		  touch $tmpfile
+      fi
+      echo >$tmpfile "$UPGRADES"
+      cut -d/ -f1 $tmpfile | tee $tmpfile
+      mousepad $tmpfile
+    fi
+  fi
+else #no GUI
+  if $SUMMARY; then
+    if [ ! -z "$UPGRADES" ]; then
+      printf '%.s─' $(seq 1 $(tput cols))
+      echo -e "$UPGRADES" | tail -n +2
+      echo
+      if [! -e "$tmpfile" ]; then
+        touch $tmpfile
+      fi
+      echo >$tmpfile "$UPGRADES"
+      cut -d/ -f1 $tmpfile | tee $tmpfile
+    fi
+  fi
+
+  if [ -f /var/run/reboot-required ]; then
+    echo -e "\e[1;34mREBOOT REQUIRED\e[0m"
+  fi
+fi
