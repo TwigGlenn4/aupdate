@@ -1,5 +1,5 @@
 #!/bin/bash
-# Aupdate 1.1.0
+# Aupdate 1.1.1
 tmpfile=/tmp/aupdate.txt
 
 SUMMARY=false
@@ -39,9 +39,10 @@ fi
 
 if "$ASK"; then
   echo $UPGRADES  
-  read -p $'\e[1;34mDo you want to continue?\e[0m ' -n 1 -r
+  read -r -p $'\e[1;34mDo you want to continue? <y/N> \e[0m ' response
   echo
-  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+  response=${response,,}    # tolower
+  if [[ ! $response =~ ^(yes|y)$ ]]; then
     exit 0
   fi
 fi
