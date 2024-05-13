@@ -1,5 +1,6 @@
 #!/bin/bash
-# Aupdate 1.1.1
+# Aupdate 1.2.0
+
 tmpfile=/tmp/aupdate.txt
 
 SUMMARY=false
@@ -34,6 +35,10 @@ sudo apt update
 
 UPGRADES=$(apt-get -s upgrade | sed -n '/following packages/,/newly installed/p')
 if [ ! -n "$UPGRADES" ]; then
+  echo -e "\e[1;34mNO UPDATES FOUND\e[0m"
+  if "$GUI"; then
+    notify-send 'No Updates Found' 'There were no available updates.' --icon=system-software-update
+  fi
   exit 0
 fi
 
