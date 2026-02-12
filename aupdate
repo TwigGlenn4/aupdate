@@ -1,5 +1,5 @@
 #!/bin/bash
-# Aupdate 1.4.0
+# Aupdate 1.4.2
 
 tmpfile=/tmp/aupdate.txt
 
@@ -74,12 +74,12 @@ if "$ASK"; then
 fi
 
 # Apply the upgrades
-# echo -e "\e[1;34mUPGRADE PACKAGES\e[0m"
-# sudo apt -y upgrade
-# echo -e "\e[1;34mREMOVE UNNESSACARY PACKAGES\e[0m"
-# sudo apt -y autoremove
-# echo -e "\e[1;34mAUTOCLEAN\e[0m"
-# sudo apt -y autoclean
+echo -e "\e[1;34mUPGRADE PACKAGES\e[0m"
+sudo apt -y upgrade
+echo -e "\e[1;34mREMOVE UNNESSACARY PACKAGES\e[0m"
+sudo apt -y autoremove
+echo -e "\e[1;34mAUTOCLEAN\e[0m"
+sudo apt -y autoclean
 
 
 # If any upgrades were found, then save file & show summary
