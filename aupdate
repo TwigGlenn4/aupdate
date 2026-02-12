@@ -1,5 +1,5 @@
 #!/bin/bash
-# Aupdate 1.3.0
+# Aupdate 1.4.0
 
 tmpfile=/tmp/aupdate.txt
 
@@ -33,13 +33,21 @@ for opt in $OPTIONS; do
 done
 
 
+if ! dpkg --compare-versions "$(apt --version | cut -d' ' -f2)" ge 3; then
+  echo "ERROR! This version of aupdate requires apt version 3.x or higher."
+  exit -1
+fi
+
 echo -e "\e[1;34mUPDATE REPOSITORIES\e[0m"
 sudo apt update
 
 
 # Dry-run the upgrade to get list of packages, exit here if there are none.
-UPGRADES=$(apt --dry-run upgrade | sed -n '/following packages/,/newly installed/p')
-if [ -z "$UPGRADES" ]; then
+UPGRADES=$(apt --dry-run upgrade 2>&1 | grep -v "does not have a stable CLI interface" | sed -n '/Upgrading:/,/^  Upgrading: [0-9]/p')
+echo
+echo "$UPGRADES"
+
+if echo "$UPGRADES" | grep -q "  Upgrading: 0"; then
   echo -e "\e[1;34mNO UPDATES FOUND\e[0m"
   if "$GUI"; then
     notify-send 'No Updates Found' 'There were no available updates.' --icon=system-software-update
@@ -48,9 +56,8 @@ if [ -z "$UPGRADES" ]; then
 fi
 
 
-# Prompt user to continue if ask flag was used.
 if "$ASK"; then
-  echo "$UPGRADES"  
+# Prompt user to continue if ask flag was used.
   read -r -p $'\e[1;34mDo you want to continue? <y/N> \e[0m ' response
   echo
   response=${response,,}    # tolower
@@ -59,29 +66,27 @@ if "$ASK"; then
   fi
 fi
 
-
 # Apply the upgrades
-echo -e "\e[1;34mUPGRADE PACKAGES\e[0m"
-sudo apt -y upgrade
-echo -e "\e[1;34mREMOVE UNNESSACARY PACKAGES\e[0m"
-sudo apt -y autoremove
-echo -e "\e[1;34mAUTOCLEAN\e[0m"
-sudo apt -y autoclean
+# echo -e "\e[1;34mUPGRADE PACKAGES\e[0m"
+# sudo apt -y upgrade
+# echo -e "\e[1;34mREMOVE UNNESSACARY PACKAGES\e[0m"
+# sudo apt -y autoremove
+# echo -e "\e[1;34mAUTOCLEAN\e[0m"
+# sudo apt -y autoclean
 
 
 # If any upgrades were found, then save file & show summary
-if [ -n "$UPGRADES" ]; then 
+if ! echo "$UPGRADES" | grep -q "  Upgrading: 0"; then
   # Save upgraded packages file
   if [ ! -e "$tmpfile" ]; then
     touch $tmpfile
   fi
-  echo >$tmpfile "$UPGRADES"
-  cut -d/ -f1 $tmpfile | tee $tmpfile
+  echo -e "$(date) \n\n$UPGRADES" > $tmpfile
 
    # Show summary
   if $SUMMARY; then
     printf '%.s─' $(seq 1 "$(tput cols)")
-    echo -e "$UPGRADES" | tail -n +2
+    echo -e "$UPGRADES"
     echo
 
     # Open summary in text editor if GUI flag
@@ -97,5 +102,9 @@ if [ -f /var/run/reboot-required ]; then
   echo -e "\e[1;34mREBOOT REQUIRED\e[0m"
   if "$GUI"; then
     notify-send 'Restart Required' 'Please restart to finish updating!' --icon=system-software-update
+  fi
+else
+  if "$GUI"; then
+    notify-send 'Update Complete' 'Updates were applied!' --icon=system-software-update
   fi
 fi
