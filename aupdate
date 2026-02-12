@@ -52,6 +52,13 @@ if echo "$UPGRADES" | grep -q "  Upgrading: 0"; then
   if "$GUI"; then
     notify-send 'No Updates Found' 'There were no available updates.' --icon=system-software-update
   fi
+
+  if [ -f /var/run/reboot-required ]; then
+    echo -e "\e[1;34mREBOOT REQUIRED FROM PREVIOUS UPDATE\e[0m"
+    if "$GUI"; then
+      notify-send 'Restart Required' 'A restart is required to finish a previous update!' --icon=system-software-update
+    fi
+  fi
   exit 0
 fi
 
